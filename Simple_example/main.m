@@ -48,9 +48,12 @@ xd = fep.fkm(goal);  % 计算前向运动学：指根据机器人或刚体的关
 e = zeros(8,1);
 e(1) = 1.0;
 disp("Starting control loop:");
+t=0;         % The step numbers for converge
+gain = -1.6; % The smaller the gain is,the faster it converge.When it's smaller than around -1.6,it will diverge.
 
 % error每个元数的平方和开方后大于0.05，就说明还没到目标位姿
 while(norm(e)>0.05)  
+   t=t+1;
    q = vi.get_joint_positions(fep_vreprobot.joint_names); 
    disp("Current joint positions ");
    q
@@ -58,7 +61,7 @@ while(norm(e)>0.05)
    % Task error
    e = vec8(x -xd);  % vec4用于四元数的向量表达，vec8用于对偶四元数的表达
    J = fep.pose_jacobian(q);  %计算将配置速度映射到机器人的坐标的位姿的时间导数的雅可比行列式
-   u = -0.1 *J' * e; %u:控制输入= gain*雅可比矩阵的复共轭转置*error
+   u = gain *J' * e; %u:控制输入= gain*雅可比矩阵的复共轭转置*error
    q = q + u;
    disp("------------------");
    fep_vreprobot.send_q_to_vrep(q);
