@@ -11,13 +11,13 @@ classdef FEpVrepRobot < DQ_VrepRobot
             obj.robot_name = robot_name;
             obj.vrep_interface = vrep_interface;
             
-            splited_name = strsplit(robot_name,'#');
-            robot_label = splited_name{1};
+            splited_name = strsplit(robot_name,'#');    % if given, get the robot index
+            robot_label = splited_name{1};              % the value for main.m(example) is Franka
             if ~strcmp(robot_label,'Franka')
                 error('Franka')
             end
             if length(splited_name) > 1
-                robot_index = splited_name{2};
+                robot_index = splited_name{2};          % if given, get the robot index
             else
                 robot_index = '';
             end
@@ -25,18 +25,18 @@ classdef FEpVrepRobot < DQ_VrepRobot
             %Initialize joint names and base frame
             obj.joint_names = {};
             for i=1:7
-                current_joint_name = {robot_label,'_joint',int2str(i),robot_index};
-                obj.joint_names{i} = strjoin(current_joint_name,'');
+                current_joint_name = {robot_label,'_joint',int2str(i),robot_index}; % define the name
+                obj.joint_names{i} = strjoin(current_joint_name,'');    % 给7个关节每个一个名字
             end
-            obj.base_frame_name = obj.joint_names{1};
+            obj.base_frame_name = obj.joint_names{1};   % 第一个关节就是基坐标系
         end            
    
         function send_q_to_vrep(obj,q)
-            obj.vrep_interface.set_joint_positions(obj.joint_names,q)
+            obj.vrep_interface.set_joint_positions(obj.joint_names,q); % 设置某关节的位置
         end
         
         function q = get_q_from_vrep(obj)
-            q = obj.vrep_interface.get_joint_positions(obj.joint_names,65536);
+            q = obj.vrep_interface.get_joint_positions(obj.joint_names,65536);  %得到某关节当前的位置
         end
         
         
@@ -58,8 +58,8 @@ classdef FEpVrepRobot < DQ_VrepRobot
             % We set the transformation from the world frame to the robot
             % base frame. Therefore, the end-effector pose is given by
             % pose_effector = transformation_from_world_to_base*fkm(q);
-             kin.set_reference_frame(obj.vrep_interface.get_object_pose(obj.base_frame_name));
-             kin.set_base_frame(obj.vrep_interface.get_object_pose(obj.base_frame_name));
+             kin.set_reference_frame(obj.vrep_interface.get_object_pose(obj.base_frame_name));  % 得到第一个节点的坐标 设为参考坐标系
+             kin.set_base_frame(obj.vrep_interface.get_object_pose(obj.base_frame_name));       % 得到第一个节点的坐标 设为当前机器人的位置
           %  kin.set_effector(1+0.5*DQ.E*DQ.k*0.1070);
 
         end
