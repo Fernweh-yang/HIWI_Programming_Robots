@@ -17,7 +17,5 @@ catkin_package(
 
 include_directories( ${catkin_INCLUDE_DIRS} )
 
-add_executable(task3 src/task3.cpp)
-add_executable(pose_control src/pose_control.cpp)
-target_link_libraries(task3 dqrobotics dqrobotics-interface-vrep ${catkin_LIBRARIES})
-target_link_libraries(pose_control pthread dqrobotics dqrobotics-interface-vrep ${catkin_LIBRARIES})
+add_executable(task_3_4 src/task_3_4.cpp)
+target_link_libraries(task_3_4 dqrobotics dqrobotics-interface-vrep ${catkin_LIBRARIES})

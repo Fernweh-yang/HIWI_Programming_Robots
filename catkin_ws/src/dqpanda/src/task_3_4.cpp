@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <math.h>
-
+#include <fstream>
 
 #include <dqrobotics/DQ.h>
 #include <dqrobotics/interfaces/vrep/DQ_VrepInterface.h>
@@ -99,7 +99,7 @@ DQ_SerialManipulatorMDH FEpVrepRobot::kinematics(){
 
 
 int main(int argc, char **argv){
-    ros::init(argc, argv, "pose_control");
+    ros::init(argc, argv, "task_3_4");
     ros::NodeHandle nh;
 
     // ********************* start ********************* 
@@ -133,8 +133,17 @@ int main(int argc, char **argv){
     DQ x;
     MatrixXd J;
     VectorXd q,u;
-    double gain = -1;
+    double gain = -1.5;
     std::cout << "Starting control loop:" <<std::endl;
+
+    std::ofstream joint_pose_log;
+    joint_pose_log.open("joint_pose_log.csv");      // save the data: q and e.norm
+    joint_pose_log  << "Franka_joint1" << "," << "Franka_joint2" << "," << "Franka_joint3" << "," 
+                    << "Franka_joint4" << "," << "Franka_joint5" << "," << "Franka_joint6" << "," 
+                    << "Franka_joint7" << "," << "error"         << std::endl;
+    VectorXd q_old(7);
+    q_old << 0,0,0,0,0,0,0;
+    int steps=1;
     while(e.norm()>0.05){
         q = vi.get_joint_positions(fep_vreprobot.joint_names);
         std::cout << "current joint positions: " << std::endl;
@@ -145,10 +154,18 @@ int main(int argc, char **argv){
         J = fep.pose_jacobian(q);
         u = gain*J.adjoint()*e;
         q = q + u;
+        if(q!=q_old){   // remove the duplicate data
+            joint_pose_log << steps <<","   << q(0) << ","  << q(1) << ","  << q(2) << ","      << q(3) 
+                           << ","   << q(4) << ","  << q(5) << ","  << q(6) << ","  << e.norm() << std::endl;
+            q_old = q;
+            steps+=1;
+        }
         std::cout << "---------------------- " << std::endl;
         fep_vreprobot.send_q_to_vrep(q);
     }
     // ********************* end *********************
+
+    joint_pose_log.close();
 
     std::cout << "Control finished" << std::endl;
     vi.stop_simulation();
