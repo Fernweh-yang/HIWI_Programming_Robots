@@ -19,3 +19,6 @@ include_directories( ${catkin_INCLUDE_DIRS} )
 
 add_executable(task_3_4 src/task_3_4.cpp)
 target_link_libraries(task_3_4 dqrobotics dqrobotics-interface-vrep ${catkin_LIBRARIES})
+
+add_executable(task5 src/task5.cpp)
+target_link_libraries(task5 dqrobotics dqrobotics-interface-vrep ${catkin_LIBRARIES})
