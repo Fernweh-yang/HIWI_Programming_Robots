@@ -29,20 +29,36 @@ double lastx = 0;
 double lasty = 0;
 
 // init parameters
-VectorXd init_qpos(7);
+Matrix<mjtNum, 7, 1>  q_goal;
 
-void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
-{
+void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods){
     // backspace: reset simulation
-    if( act==GLFW_PRESS && key==GLFW_KEY_BACKSPACE )
-    {
+    if( act==GLFW_PRESS && key==GLFW_KEY_BACKSPACE ){
         mj_resetData(m, d);
         mj_forward(m, d);
     }
 }
 
-void mouse_button(GLFWwindow* window, int button, int act, int mods)
-{
+std::vector<std::string> split(std::string s,char ch){
+    int start=0;
+    int len=0;
+    std::vector<std::string> ret;
+    for(int i=0;i<s.length();i++){
+        if(s[i]==ch){
+            ret.push_back(s.substr(start,len));
+            start=i+1;
+            len=0;
+        }
+        else{
+            len++;
+        }
+    }
+    if(start<s.length())
+        ret.push_back(s.substr(start,len));
+    return ret;
+}
+
+void mouse_button(GLFWwindow* window, int button, int act, int mods){
     // update button state
     button_left =   (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS);
     button_middle = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS);
@@ -52,8 +68,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods)
     glfwGetCursorPos(window, &lastx, &lasty);
 }
 
-void mouse_move(GLFWwindow* window, double xpos, double ypos)
-{
+void mouse_move(GLFWwindow* window, double xpos, double ypos){
     // no buttons down: nothing to do
     if( !button_left && !button_middle && !button_right )
         return;
@@ -70,7 +85,7 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos)
 
     // get shift key state
     bool mod_shift = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS ||
-                      glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS);
+                        glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS);
 
     // determine action based on mouse button
     mjtMouse action;
@@ -85,45 +100,33 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos)
     mjv_moveCamera(m, action, dx/height, dy/height, &scn, &cam);
 }
 
-void scroll(GLFWwindow* window, double xoffset, double yoffset)
-{
+void scroll(GLFWwindow* window, double xoffset, double yoffset){
     mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn, &cam);
 }
 
+void controller(const mjModel* m, mjData* d){
+    Map<Matrix<mjtNum,7,1>> q(d->qpos); // current joint position
+    Map<Matrix<mjtNum,7,1>> qv(d->qvel); // current joint velocity
+    Matrix<mjtNum, 7, 1> q_error,qv_error,qv_goal,kp,kd,tau;
+    qv_goal.setZero();
+    q_error =  q - q_goal;
+    qv_error = qv- qv_goal;
 
-void init_controller(const mjModel* m, mjData* d)
-{
-  init_qpos << 0.6579, -0.06562,-0.6566,-2.339,-0.0441,2.2911,0.7280;
-  for (size_t i=0;i<7;i++)
-   {
-    d->qpos[i] = init_qpos[i];
-  }
+    kp << 600.0, 600.0, 600.0, 600.0, 250.0, 250.0, 50.0;
+    kd << 50.0, 50.0, 50.0, 50.0, 20.0, 20.0, 10.0;
+    Eigen::Matrix<mjtNum, 7, 7> kp_matrix = kp.asDiagonal();
+    Eigen::Matrix<mjtNum, 7, 7> kd_matrix = kd.asDiagonal();
 
+    tau = kp_matrix*q_error+kd_matrix*qv_error;
+
+    for (size_t i=0;i<7;i++)
+    {
+        d->ctrl[i] = -tau[i];
+        std::cout << i <<":" << -tau[i] << std::endl;
+
+    }
 }
 
-void init_pose(const mjModel* m, mjData* d){
-  init_qpos << 0.6579, -0.06562,-0.6566,-2.339,-0.0441,2.2911,0.7280;
-  for (size_t i=0;i<7;i++)
-  {
-    d->qpos[i] = init_qpos[i];
-  }
-}
-
-void update_controller(double pos_foot[3], double z_velocity){
-  
-}
-
-void controller(const mjModel* m, mjData* d)
-{
-  int body_number = 3;
-  double pos_foot[3]={ d->xpos[3*body_number+0], d->xpos[3*body_number+1], d->xpos[3*body_number+2]};
-  double z_velocity = d->qvel[1]; //0 is x, 1 is z
-
-  update_controller(pos_foot,z_velocity);
-
-  //all actions
-  int actuator_number;
-}
 
 
 int main(int argc, const char** argv)
@@ -161,33 +164,26 @@ int main(int argc, const char** argv)
     glfwSetCursorPosCallback(window, mouse_move);
     glfwSetMouseButtonCallback(window, mouse_button);
     glfwSetScrollCallback(window, scroll);
+    double arr_view[] = {90, -10, 5, 0.000000, 0.000000, 2.000000};
+    cam.azimuth = arr_view[0];
+    cam.elevation = arr_view[1];
+    cam.distance = arr_view[2];
+    cam.lookat[0] = arr_view[3];
+    cam.lookat[1] = arr_view[4];
+    cam.lookat[2] = arr_view[5];
     // ***************** end *****************
 
 
     // ***************** start *****************
     // ***************** define the controller *****************
-    // init_pose(m,d);    
-    init_qpos << 0.6579,-0.06562,-0.6566,-2.339,-0.0441,2.2911,0.7280;
-    for (size_t i=0;i<7;i++){
-        d->qpos[i] = init_qpos[i];
-    }
-
-
-
-
-
-
-
-
+    q_goal<<  -M_PI/2.0,  0.004,  0.0,  -1.57156,   0.0,   1.57075,0.0;
     mjcb_control = controller;  // define the control callback;
-    // init_controller(m,d);
     // ***************** end *****************
 
 
     // ***************** start *****************
     // ***************** simulate *****************
-    while( !glfwWindowShouldClose(window))
-    {
+    while( !glfwWindowShouldClose(window)){
         mjtNum simstart = d->time;
         while( d->time - simstart < 1.0/60.0 )
         {
@@ -196,10 +192,10 @@ int main(int argc, const char** argv)
 
         if (d->time>=simulation_endtime)
         {
-           break;
-         }
+            break;
+            }
 
-       // view at body
+        // view at body
         mjrRect viewport = {0, 0, 0, 0};
         glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
         int body_number;
@@ -210,13 +206,13 @@ int main(int argc, const char** argv)
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    // ***************** end *****************
+  // ***************** end *****************
 
-    mjv_freeScene(&scn);
-    mjr_freeContext(&con);
-    mj_deleteData(d);
-    mj_deleteModel(m);
-    mj_deactivate();
-    return 1;
+  mjv_freeScene(&scn);
+  mjr_freeContext(&con);
+  mj_deleteData(d);
+  mj_deleteModel(m);
+  mj_deactivate();
+  return 1;
 }
 

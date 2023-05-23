@@ -1,5 +1,4 @@
-# COMMON=-O2 -I../include -I/usr/include/eigen3 -L../lib -std=c++17 -pthread -Wl,-no-as-needed -Wl,-rpath,'$$ORIGIN'/../lib
-COMMON=-O2 -I../include -L../lib -std=c++17 -pthread -Wl,-no-as-needed -Wl,-rpath,'$$ORIGIN'/../lib
+COMMON=-O2 -I../include -I. -L../lib -std=c++17 -pthread -Wl,-no-as-needed -Wl,-rpath,'$$ORIGIN'/../lib
 .PHONY: all
 all:
-	$(CXX) $(COMMON) task6.cc     -lmujoco -lglfw   -o ../bin/task6
+	$(CXX) $(COMMON) task6.cpp     -lmujoco -lglfw   -o ../bin/task6
