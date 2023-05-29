@@ -63,7 +63,19 @@
   
     - I meet a problem in this task, please read the [README.md](https://github.com/Fernweh-yang/HIWI_Programming_Robots/blob/main/Task7/README.md)
   
-  
+- Task8:[task8.cpp](https://github.com/Fernweh-yang/HIWI_Programming_Robots/blob/main/Task8/task8.cpp)
+
+  - The dynamic parameters are stored in dynamic [parameters.txt](https://github.com/Fernweh-yang/HIWI_Programming_Robots/blob/main/Task8/build/dynamic%20parameters.txt)
+
+  - compile with commands:
+
+    ```
+    mkdir build
+    cd build
+    cmake ..
+    make
+    ```
+
   
 
 
